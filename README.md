@@ -1,14 +1,11 @@
-<h1 align="center">🎭 Deepfake Detection & AI Fairness Analysis</h1>
+<h1 align="center">🕵️ Deepfake Detection using Deep Learning</h1>
 
 
 
-<hr>
-
-<h2>📌 Project Description</h2>
-
-<p>
-This project focuses on two major challenges in modern Artificial Intelligence:
+<p align="center">
+  <b>AI-based system for detecting manipulated facial images using CNN architectures</b>
 </p>
+
 
 <ul>
 <li><strong>Deepfake Detection</strong> (Video or Audio)</li>
