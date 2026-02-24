@@ -7,110 +7,114 @@
 </p>
 
 
-<ul>
-<li><strong>Deepfake Detection</strong> (Video or Audio)</li>
-<li><strong>AI Fairness & Bias Analysis</strong></li>
-</ul>
+<hr>
 
+<h2>📌 Project Overview</h2>
 <p>
-Deepfakes are synthetic media generated using advanced deep learning models.
-This project aims to detect manipulated media and evaluate fairness in AI systems.
-</p>
-<ul>
-<li><strong>Deepfake Detection</strong> (Video or Audio)</li>
-<li><strong>AI Fairness & Bias Analysis</strong></li>
-</ul>
-
-<p>
-Deepfakes are synthetic media generated using advanced deep learning models.
-This project aims to detect manipulated media and evaluate fairness in AI systems.
+This project implements a deep learning-based approach for detecting deepfake images.
+We fine-tune a pretrained <b>ResNet18</b> model to classify images as <b>Real</b> or <b>Fake</b>.
+The system also evaluates robustness under resolution degradation and noise conditions.
 </p>
 
 <hr>
 
-<h2>🎯 Project Options</h2>
-
-<h3>🅰 Option A – Video Deepfake Detection</h3>
-
+<h2>🧠 Model Architecture</h2>
 <ul>
-<li>Spatial analysis using CNN (EfficientNet, ResNet)</li>
-<li>Temporal analysis using LSTM or 3D-CNN</li>
-<li>Attention mechanisms</li>
-<li>Lighting inconsistency detection</li>
-</ul>
-
-<p><strong>Dataset:</strong> Deepfake Detection Challenge (DFDC)</p>
-
-<hr>
-
-<h3>🅱 Option B – Fairness Analysis</h3>
-
-<ul>
-<li>Demographic disparity evaluation</li>
-<li>Intersectional bias analysis</li>
-<li>Fairness-aware training</li>
-<li>Performance gap reduction</li>
-</ul>
-
-<p><strong>Dataset:</strong> FHIBE</p>
-
-<hr>
-
-<h3>🅲 Option C – Audio Deepfake Detection</h3>
-
-<ul>
-<li>Mel-Spectrogram extraction</li>
-<li>MFCC features</li>
-<li>CNN + LSTM architecture</li>
-<li>Robustness to noise and compression</li>
-</ul>
-
-<p><strong>Datasets:</strong> ASVspoof, WaveFake</p>
-
-<hr>
-
-<h2>🛠 Technologies</h2>
-
-<ul>
-<li>PyTorch / TensorFlow</li>
-<li>OpenCV</li>
-<li>MTCNN / dlib</li>
-<li>librosa</li>
-<li>scikit-learn</li>
-<li>fairlearn</li>
-<li>SHAP / Grad-CAM</li>
-<li>Streamlit / Gradio</li>
+  <li>Pretrained ResNet18 (Transfer Learning)</li>
+  <li>Binary classification (Real vs Fake)</li>
+  <li>Fine-tuning last convolutional layers</li>
+  <li>Cross-Entropy Loss</li>
+  <li>Adam Optimizer</li>
 </ul>
 
 <hr>
 
-<h2>📂 Project Structure</h2>
+<h2>📊 Performance</h2>
+<table>
+  <tr>
+    <th>Metric</th>
+    <th>Value</th>
+  </tr>
+  <tr>
+    <td>Validation Accuracy</td>
+    <td>83.5%</td>
+  </tr>
+  <tr>
+    <td>Training Loss (Final)</td>
+    <td>0.0277</td>
+  </tr>
+</table>
+
+<hr>
+
+<h2>🔬 Robustness Evaluation</h2>
+<p>
+The model was tested under different degradation conditions:
+</p>
+
+<ul>
+  <li>Low Resolution (128x128)</li>
+  <li>Image Noise Injection</li>
+  <li>Compression Simulation</li>
+</ul>
+
+<p>
+Results show a moderate drop in performance under heavy degradation,
+highlighting sensitivity to compression artifacts.
+</p>
+
+<hr>
+
+<h2>📁 Project Structure</h2>
 
 <pre>
-deepfake-fairness-ai-project/
-│
-├── data/
-├── notebooks/
-├── src/
-├── models/
-├── reports/
-├── tests/
-├── requirements.txt
-└── README.md
+📦 Deepfake-Detection
+ ┣ 📂 data
+ ┣ 📂 notebooks
+ ┣ 📂 models
+ ┣ 📄 train.py
+ ┣ 📄 evaluate.py
+ ┗ 📄 README.md
 </pre>
 
 <hr>
 
-<h2>⚖ Ethical Considerations</h2>
+<h2>🚀 How to Run</h2>
 
+<pre>
+pip install -r requirements.txt
+python train.py
+python evaluate.py
+</pre>
+
+<hr>
+
+<h2>🛠 Technologies Used</h2>
 <ul>
-<li>Use of consensual datasets only</li>
-<li>Responsible AI principles</li>
-<li>Transparency in fairness evaluation</li>
+  <li>Python 3.11</li>
+  <li>PyTorch</li>
+  <li>Torchvision</li>
+  <li>NumPy</li>
+  <li>Matplotlib</li>
 </ul>
 
 <hr>
 
+<h2>📌 Future Improvements</h2>
+<ul>
+  <li>Add Grad-CAM visualization</li>
+  <li>Integrate video-level temporal analysis</li>
+  <li>Improve robustness with advanced augmentation</li>
+  <li>Deploy via Streamlit web app</li>
+</ul>
+
+<hr>
+
+<h2>👩‍💻 Author</h2>
+<p>
+Safa — Artificial Intelligence & Cybersecurity Student
+</p>
+
 <p align="center">
-Academic Project – Educational Purpose Only
+⭐ If you like this project, give it a star!
 </p>
