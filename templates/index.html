@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeepFake Forensics</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #050a0e;
+    --bg2:      #0a1520;
+    --bg3:      #0f1f2e;
+    --accent:   #00d4ff;
+    --danger:   #ff3c5f;
+    --safe:     #00ff88;
+    --warn:     #ffaa00;
+    --text:     #c8dce8;
+    --dim:      #4a6a80;
+    --border:   #1a3a50;
+    --glow:     0 0 20px rgba(0,212,255,0.3);
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-main: 'Rajdhani', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Scanline effect */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .container {
+    position: relative;
+    z-index: 2;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0 30px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 30px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .logo-icon {
+    width: 45px; height: 45px;
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    box-shadow: var(--glow);
+    animation: pulse-border 2s infinite;
+  }
+
+  @keyframes pulse-border {
+    0%, 100% { box-shadow: 0 0 10px rgba(0,212,255,0.3); }
+    50%       { box-shadow: 0 0 25px rgba(0,212,255,0.7); }
+  }
+
+  .logo-text h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  .logo-text p {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 2px;
+  }
+
+  .status-bar {
+    display: flex;
+    gap: 20px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--dim);
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--safe);
+    animation: blink 1.5s infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+
+  /* Main grid */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  /* Panel */
+  .panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .panel-header::before {
+    content: '//';
+    color: var(--dim);
+  }
+
+  .panel-body { padding: 20px; }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 4px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upload-zone:hover,
+  .upload-zone.dragover {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.04);
+  }
+
+  .upload-zone.dragover::after {
+    content: 'DROP FILE';
+    position: absolute;
+    inset: 0;
+    background: rgba(0,212,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 20px;
+    color: var(--accent);
+    letter-spacing: 4px;
+  }
+
+  .upload-icon {
+    font-size: 40px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+  }
+
+  .upload-zone h3 {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  .upload-zone p {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--dim);
+  }
+
+  #fileInput { display: none; }
+
+  /* Preview */
+  .preview-container {
+    margin-top: 16px;
+    display: none;
+  }
+
+  .preview-container img {
+    width: 100%;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  /* Analyze button */
+  .btn-analyze {
+    width: 100%;
+    margin-top: 16px;
+    padding: 14px;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-analyze::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent);
+    transform: translateX(-100%);
+    transition: transform 0.3s;
+    z-index: -1;
+  }
+
+  .btn-analyze:hover {
+    color: var(--bg);
+    box-shadow: var(--glow);
+  }
+
+  .btn-analyze:hover::before { transform: translateX(0); }
+
+  .btn-analyze:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  /* Results */
+  .result-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    gap: 10px;
+    color: var(--dim);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+
+  .result-placeholder-icon { font-size: 40px; opacity: 0.3; }
+
+  /* Verdict */
+  .verdict {
+    display: none;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .verdict-badge {
+    text-align: center;
+    padding: 20px;
+    border-radius: 4px;
+    border: 2px solid;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .verdict-badge.real {
+    border-color: var(--safe);
+    background: rgba(0,255,136,0.05);
+  }
+
+  .verdict-badge.fake {
+    border-color: var(--danger);
+    background: rgba(255,60,95,0.05);
+  }
+
+  .verdict-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+    opacity: 0.6;
+  }
+
+  .verdict-result {
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: 6px;
+  }
+
+  .verdict-badge.real .verdict-result { color: var(--safe); }
+  .verdict-badge.fake .verdict-result { color: var(--danger); }
+
+  .verdict-confidence {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    margin-top: 6px;
+    opacity: 0.7;
+  }
+
+  /* Scan animation */
+  .verdict-badge::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    top: -2px;
+    animation: scan 2s ease-in-out;
+  }
+
+  .verdict-badge.real::after { background: var(--safe); }
+  .verdict-badge.fake::after { background: var(--danger); }
+
+  @keyframes scan {
+    0%   { top: -2px; opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+  }
+
+  /* Probability bars */
+  .prob-section { display: flex; flex-direction: column; gap: 12px; }
+
+  .prob-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .prob-label {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+
+  .prob-label span:first-child { color: var(--dim); letter-spacing: 2px; }
+  .prob-label span:last-child  { color: var(--text); }
+
+  .prob-bar {
+    height: 6px;
+    background: var(--bg3);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .prob-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0%;
+  }
+
+  .prob-fill.real { background: var(--safe); box-shadow: 0 0 8px var(--safe); }
+  .prob-fill.fake { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+  /* Images row */
+  .images-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 4px;
+  }
+
+  .img-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .img-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .img-panel img {
+    width: 100%;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  /* Metadata */
+  .meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .meta-item {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+  }
+
+  .meta-key {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+
+  .meta-val {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  /* Loading */
+  .loading {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    gap: 20px;
+  }
+
+  .loading-spinner {
+    width: 50px; height: 50px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    animation: fade 1s infinite alternate;
+  }
+
+  .loading-log {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--dim);
+    text-align: center;
+    letter-spacing: 1px;
+  }
+
+  @keyframes fade {
+    from { opacity: 0.4; }
+    to   { opacity: 1; }
+  }
+
+  /* Full width panel */
+  .panel-full {
+    grid-column: 1 / -1;
+  }
+
+  /* Alert */
+  .alert {
+    display: none;
+    padding: 12px 16px;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    margin-top: 10px;
+  }
+
+  .alert.error {
+    background: rgba(255,60,95,0.1);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 30px;
+    padding: 20px 0;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--dim);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .panel-full { grid-column: 1; }
+    .images-row { grid-template-columns: 1fr; }
+    .meta-grid  { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🔍</div>
+      <div class="logo-text">
+        <h1>DeepFake Forensics</h1>
+        <p>CYBER INTELLIGENCE SYSTEM v2.0 — EFFICIENTNET-B4</p>
+      </div>
+    </div>
+    <div class="status-bar">
+      <div class="status-item">
+        <div class="status-dot"></div>
+        SYSTEM ONLINE
+      </div>
+      <div class="status-item">
+        <div class="status-dot" style="background:var(--accent)"></div>
+        MODEL LOADED
+      </div>
+      <div class="status-item" id="gpuStatus">
+        <div class="status-dot" style="background:var(--warn)"></div>
+        CHECKING GPU...
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Grid -->
+  <div class="main-grid">
+
+    <!-- Panel Upload -->
+    <div class="panel">
+      <div class="panel-header">INPUT — IMAGE FORENSICS</div>
+      <div class="panel-body">
+
+        <div class="upload-zone" id="uploadZone">
+          <div class="upload-icon">📁</div>
+          <h3>Drop Image Here</h3>
+          <p>SUPPORTED: JPG · PNG · WEBP · MAX 10MB</p>
+          <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div class="preview-container" id="previewContainer">
+          <img id="previewImg" src="" alt="preview">
+        </div>
+
+        <div class="alert error" id="alertBox"></div>
+
+        <button class="btn-analyze" id="btnAnalyze" disabled>
+          ⟶ LAUNCH FORENSIC ANALYSIS
+        </button>
+
+      </div>
+    </div>
+
+    <!-- Panel Results -->
+    <div class="panel">
+      <div class="panel-header">OUTPUT — ANALYSIS RESULTS</div>
+      <div class="panel-body">
+
+        <!-- Placeholder -->
+        <div class="result-placeholder" id="placeholder">
+          <div class="result-placeholder-icon">⬡</div>
+          <span>AWAITING INPUT</span>
+          <span style="font-size:10px;opacity:0.5">Upload an image to begin analysis</span>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+          <div class="loading-spinner"></div>
+          <div class="loading-text">ANALYZING...</div>
+          <div class="loading-log" id="loadingLog">Initializing forensic pipeline...</div>
+        </div>
+
+        <!-- Verdict -->
+        <div class="verdict" id="verdict">
+
+          <div class="verdict-badge" id="verdictBadge">
+            <div class="verdict-label">FORENSIC VERDICT</div>
+            <div class="verdict-result" id="verdictResult">—</div>
+            <div class="verdict-confidence" id="verdictConfidence"></div>
+          </div>
+
+          <div class="prob-section">
+            <div class="prob-row">
+              <div class="prob-label">
+                <span>REAL PROBABILITY</span>
+                <span id="realPct">—</span>
+              </div>
+              <div class="prob-bar">
+                <div class="prob-fill real" id="realBar"></div>
+              </div>
+            </div>
+            <div class="prob-row">
+              <div class="prob-label">
+                <span>FAKE PROBABILITY</span>
+                <span id="fakePct">—</span>
+              </div>
+              <div class="prob-bar">
+                <div class="prob-fill fake" id="fakeBar"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="images-row">
+            <div class="img-panel">
+              <div class="img-label">🔲 DETECTED FACE</div>
+              <img id="faceImg" src="" alt="face">
+            </div>
+            <div class="img-panel">
+              <div class="img-label">🌡 GRAD-CAM HEATMAP</div>
+              <img id="gradcamImg" src="" alt="gradcam">
+            </div>
+          </div>
+
+          <div class="meta-grid">
+            <div class="meta-item">
+              <div class="meta-key">FACE DETECTED</div>
+              <div class="meta-val" id="metaFace">—</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-key">CONFIDENCE</div>
+              <div class="meta-val" id="metaConf">—</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-key">MODEL</div>
+              <div class="meta-val" style="font-size:12px">EfficientNet-B4</div>
+            </div>
+            <div class="meta-item">
+              <div class="meta-key">METHOD</div>
+              <div class="meta-val" style="font-size:12px">TTA × 10</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end main-grid -->
+
+  <!-- Footer -->
+  <footer>
+    <span>DEEPFAKE FORENSICS SYSTEM — CYBERSECURITY MODULE</span>
+    <span id="timestamp"></span>
+  </footer>
+
+</div><!-- end container -->
+
+<script>
+  // ── Timestamp ──────────────────────────────────────────────────────
+  function updateTime() {
+    const now = new Date();
+    document.getElementById('timestamp').textContent =
+      now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+  }
+  updateTime();
+  setInterval(updateTime, 1000);
+
+  // ── GPU Status ─────────────────────────────────────────────────────
+  fetch('/gpu_status')
+    .then(r => r.json())
+    .then(data => {
+      const el = document.getElementById('gpuStatus');
+      el.innerHTML = data.cuda
+        ? `<div class="status-dot" style="background:var(--safe)"></div>GPU ACTIVE`
+        : `<div class="status-dot" style="background:var(--warn)"></div>CPU MODE`;
+    }).catch(() => {});
+
+  // ── Upload & Drag Drop ─────────────────────────────────────────────
+  const uploadZone = document.getElementById('uploadZone');
+  const fileInput  = document.getElementById('fileInput');
+  const preview    = document.getElementById('previewContainer');
+  const previewImg = document.getElementById('previewImg');
+  const btnAnalyze = document.getElementById('btnAnalyze');
+  let   selectedFile = null;
+
+  uploadZone.addEventListener('click', () => fileInput.click());
+
+  uploadZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    uploadZone.classList.add('dragover');
+  });
+
+  uploadZone.addEventListener('dragleave', () => {
+    uploadZone.classList.remove('dragover');
+  });
+
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) handleFile(fileInput.files[0]);
+  });
+
+  function handleFile(file) {
+    if (!file.type.startsWith('image/')) {
+      showAlert('❌ File must be an image (JPG, PNG, WEBP)');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      showAlert('❌ File too large — max 10MB');
+      return;
+    }
+    hideAlert();
+    selectedFile = file;
+    const reader = new FileReader();
+    reader.onload = e => {
+      previewImg.src = e.target.result;
+      preview.style.display = 'block';
+      btnAnalyze.disabled = false;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ── Analyze ────────────────────────────────────────────────────────
+  const logs = [
+    'Initializing forensic pipeline...',
+    'Detecting facial landmarks...',
+    'Running EfficientNet-B4 inference...',
+    'Applying TTA × 10 passes...',
+    'Computing Grad-CAM heatmap...',
+    'Generating forensic report...'
+  ];
+  let logIdx = 0;
+  let logInterval;
+
+  btnAnalyze.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    // Show loading
+    document.getElementById('placeholder').style.display = 'none';
+    document.getElementById('verdict').style.display = 'none';
+    document.getElementById('loading').style.display = 'flex';
+    btnAnalyze.disabled = true;
+
+    // Animate logs
+    logIdx = 0;
+    document.getElementById('loadingLog').textContent = logs[0];
+    logInterval = setInterval(() => {
+      logIdx = (logIdx + 1) % logs.length;
+      document.getElementById('loadingLog').textContent = logs[logIdx];
+    }, 1200);
+
+    // Send request
+    const formData = new FormData();
+    formData.append('image', selectedFile);
+
+    try {
+      const response = await fetch('/analyze', { method: 'POST', body: formData });
+      const data     = await response.json();
+      clearInterval(logInterval);
+
+      if (data.error) {
+        showAlert('❌ ' + data.error);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('placeholder').style.display = 'flex';
+        btnAnalyze.disabled = false;
+        return;
+      }
+
+      showResults(data);
+    } catch (err) {
+      clearInterval(logInterval);
+      showAlert('❌ Connection error — is the server running?');
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('placeholder').style.display = 'flex';
+      btnAnalyze.disabled = false;
+    }
+  });
+
+  function showResults(data) {
+    document.getElementById('loading').style.display = 'none';
+
+    const badge = document.getElementById('verdictBadge');
+    badge.className = 'verdict-badge ' + data.prediction.toLowerCase();
+
+    document.getElementById('verdictResult').textContent    = data.prediction;
+    document.getElementById('verdictConfidence').textContent = `CONFIDENCE : ${data.confidence}%`;
+    document.getElementById('realPct').textContent          = data.real_prob + '%';
+    document.getElementById('fakePct').textContent          = data.fake_prob + '%';
+    document.getElementById('metaFace').textContent         = data.face_detected ? '✅ YES' : '⚠️ NO';
+    document.getElementById('metaConf').textContent         = data.confidence + '%';
+    document.getElementById('faceImg').src                  = 'data:image/jpeg;base64,' + data.face_image;
+    document.getElementById('gradcamImg').src               = 'data:image/jpeg;base64,' + data.gradcam_image;
+
+    document.getElementById('verdict').style.display = 'flex';
+
+    // Animate bars after short delay
+    setTimeout(() => {
+      document.getElementById('realBar').style.width = data.real_prob + '%';
+      document.getElementById('fakeBar').style.width = data.fake_prob + '%';
+    }, 100);
+
+    btnAnalyze.disabled = false;
+  }
+
+  function showAlert(msg) {
+    const el = document.getElementById('alertBox');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function hideAlert() {
+    document.getElementById('alertBox').style.display = 'none';
+  }
+</script>
+</body>
+</html>
