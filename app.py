@@ -21,7 +21,7 @@ DEVICE     = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 MODEL_PATH = "best_model.pth"
 MEAN       = [0.485, 0.456, 0.406]
 STD        = [0.229, 0.224, 0.225]
-THRESHOLD  = 0.60
+THRESHOLD  = 0.50
 CLASS_TO_IDX = {"Fake": 0, "Real": 1}
 
 print(f"✅ Device : {DEVICE}")
@@ -31,10 +31,14 @@ def load_model():
     model = efficientnet_b4(weights=None)
     num_features = model.classifier[1].in_features
     model.classifier = nn.Sequential(
-        nn.Dropout(0.4),
-        nn.Linear(num_features, 2)
+        nn.Dropout(0.5),
+        nn.Linear(num_features, 512),
+        nn.BatchNorm1d(512),
+        nn.SiLU(),
+        nn.Dropout(0.3),
+        nn.Linear(512, 2),
     )
-    model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE, weights_only=True))
     model.to(DEVICE)
     model.eval()
     return model
