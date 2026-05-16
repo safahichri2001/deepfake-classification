@@ -1,120 +1,83 @@
-<h1 align="center">🕵️ Deepfake Detection using Deep Learning</h1>
+# Deepfake Detection — EfficientNetB4
 
+AI system for detecting deepfake facial images using fine-tuned EfficientNetB4 with Grad-CAM explainability and a Flask web interface.
 
+---
 
-<p align="center">
-  <b>AI-based system for detecting manipulated facial images using CNN architectures</b>
-</p>
+## Results
 
+| Metric | Value |
+|---|---|
+| **Test Accuracy** | **91.08%** |
+| **ROC-AUC** | **~0.97** |
+| Best Val Accuracy | 92.52% |
+| Dataset | 14,823 images (Fake / Real) |
+| Training images | 10,662 (after cleaning) |
 
-<hr>
+---
 
-<h2>📌 Project Overview</h2>
-<p>
-This project implements a deep learning-based approach for detecting deepfake images.
-We fine-tune a pretrained <b>ResNet18</b> model to classify images as <b>Real</b> or <b>Fake</b>.
-The system also evaluates robustness under resolution degradation and noise conditions.
-</p>
+## Pipeline
 
-<hr>
+```
+Raw Dataset
+    └── Stage 1 : Audit          — class distribution, visual inspection
+    └── Stage 2 : Cleaning       — duplicate detection (phash), corruption check
+    └── Stage 3 : Augmentation   — flip, rotation, JPEG compression, Gaussian blur
+    └── Stage 4 : DataLoaders    — WeightedRandomSampler for class balance
+    └── Stage 5 : Model          — EfficientNetB4 + deep classifier head
+    └── Stage 6 : Training       — FocalLoss, AdamW, OneCycleLR, early stopping
+    └── Stage 7 : Evaluation     — confusion matrix, ROC curve, AUC
+    └── Stage 8 : Grad-CAM       — visual explanation of predictions
+    └── Stage 9 : Inference TTA  — 15-pass test-time augmentation
+    └── Stage 10: Deployment     — TorchScript export (.pt)
+```
 
-<h2>🧠 Model Architecture</h2>
-<ul>
-  <li>Pretrained ResNet18 (Transfer Learning)</li>
-  <li>Binary classification (Real vs Fake)</li>
-  <li>Fine-tuning last convolutional layers</li>
-  <li>Cross-Entropy Loss</li>
-  <li>Adam Optimizer</li>
-</ul>
+---
 
-<hr>
+## Model Architecture
 
-<h2>📊 Performance</h2>
-<table>
-  <tr>
-    <th>Metric</th>
-    <th>Value</th>
-  </tr>
-  <tr>
-    <td>Validation Accuracy</td>
-    <td>83.5%</td>
-  </tr>
-  <tr>
-    <td>Training Loss (Final)</td>
-    <td>0.0277</td>
-  </tr>
-</table>
+- **Backbone**: EfficientNetB4 (ImageNet pretrained)
+- **Fine-tuned**: last 4 feature blocks + classifier
+- **Head**: `Linear(1792→512) → BN → SiLU → Linear(512→2)`
+- **Loss**: Focal Loss (γ=2) + label smoothing (0.05)
+- **Optimizer**: AdamW + OneCycleLR scheduler
+- **Regularization**: gradient clipping, dropout (0.5 / 0.3), early stopping
 
-<hr>
+---
 
-<h2>🔬 Robustness Evaluation</h2>
-<p>
-The model was tested under different degradation conditions:
-</p>
+## Web Interface
 
-<ul>
-  <li>Low Resolution (128x128)</li>
-  <li>Image Noise Injection</li>
-  <li>Compression Simulation</li>
-</ul>
+Flask app with MTCNN face detection and Grad-CAM visualization.
 
-<p>
-Results show a moderate drop in performance under heavy degradation,
-highlighting sensitivity to compression artifacts.
-</p>
-
-<hr>
-
-<h2>📁 Project Structure</h2>
-
-<pre>
-📦 Deepfake-Detection
- ┣ 📂 data
- ┣ 📂 notebooks
- ┣ 📂 models
- ┣ 📄 train.py
- ┣ 📄 evaluate.py
- ┗ 📄 README.md
-</pre>
-
-<hr>
-
-<h2>🚀 How to Run</h2>
-
-<pre>
+```bash
 pip install -r requirements.txt
-python train.py
-python evaluate.py
-</pre>
+python app.py
+# open http://localhost:5000
+```
 
-<hr>
+---
 
-<h2>🛠 Technologies Used</h2>
-<ul>
-  <li>Python 3.11</li>
-  <li>PyTorch</li>
-  <li>Torchvision</li>
-  <li>NumPy</li>
-  <li>Matplotlib</li>
-</ul>
+## Project Structure
 
-<hr>
+```
+deepfake-classification/
+├── app.py                          # Flask web app
+├── notebooks/
+│   └── deepfake_detection.ipynb   # Full training pipeline
+├── templates/
+│   └── index.html                 # Web interface
+├── requirements.txt
+└── README.md
+```
 
-<h2>📌 Future Improvements</h2>
-<ul>
-  <li>Add Grad-CAM visualization</li>
-  <li>Integrate video-level temporal analysis</li>
-  <li>Improve robustness with advanced augmentation</li>
-  <li>Deploy via Streamlit web app</li>
-</ul>
+---
 
-<hr>
+## Technologies
 
-<h2>👩‍💻 Author</h2>
-<p>
-Safa — Artificial Intelligence & Cybersecurity Student
-</p>
+Python 3.11 · PyTorch 2.5 · EfficientNetB4 · facenet-pytorch (MTCNN) · pytorch-grad-cam · Flask · scikit-learn · imagehash
 
-<p align="center">
-⭐ If you like this project, give it a star!
-</p>
+---
+
+## Author
+
+Safa Hichri — AI & Cybersecurity Student
